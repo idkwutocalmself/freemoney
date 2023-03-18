@@ -1,0 +1,66 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    line-height: 35px;
+}
+
+audio {
+    margin: 20px 0;
+}
+
+.flash {
+	animation: flash 3s infinite;
+}
+
+@keyframes flash {
+	0% {
+		color: rgb(206, 245, 51);
+	}
+	50% {
+		color: red;
+	}
+	100% {
+		color: rgb(206, 245, 51);
+	}
+}
+.text {
+	font-family: “Comic Sans MS”, “Comic Sans”, monospace;
+	background-color: rgb(215, 255, 255);
+	text-align: center;
+}
+
+#crash {
+    display: none;
+    position: fixed;
+    z-index: 69;
+    width: 98vw; 
+    height: 98vh;
+    top: 0;
+}
+
+.flash2 {
+    display: block !important;
+    animation: flash2 8s linear;
+}
+
+@keyframes flash2 {
+    0% { 
+        background-color: rgba(0, 0, 0, 0);
+    }
+    100% {
+        background-color: black;
+    }
+}
+
+#score, #bonus {
+    margin-right: 40px;
+}
+
+table.actualTable th, table.actualTable tr, table.actualTable td {
+	padding: 5px;
+}
+#saving {
+	position: fixed;
+	left: 0;
+	bottom: 0;
+}

@@ -1,0 +1,162 @@
+<html>
+    <head>
+    	<meta charset="utf-8">
+    	<meta name="viewport" content="width=device-width">
+    	<title>Wordle</title>
+        <style>
+            td {
+                border: 1px solid black;
+                border-radius: 2px;
+                font-size: 30px;
+                background-color: lightgray;
+                text-align: center;
+                width: 40px;
+                height: 45px;
+            }
+        </style>
+    </head>
+    <body style="text-align: center;">
+        <h1>Just a normal game of wordle.</h1>
+        <table style="margin-left: auto; margin-right: auto;">
+            <tr>
+                <td id='r1c1'></td>
+                <td id='r1c2'></td>
+                <td id='r1c3'></td>
+                <td id='r1c4'></td>
+                <td id='r1c5'></td>
+            </tr>
+            <tr>
+                <td id='r2c1'></td>
+                <td id='r2c2'></td>
+                <td id='r2c3'></td>
+                <td id='r2c4'></td>
+                <td id='r2c5'></td>
+            </tr>
+            <tr>
+                <td id='r3c1'></td>
+                <td id='r3c2'></td>
+                <td id='r3c3'></td>
+                <td id='r3c4'></td>
+                <td id='r3c5'></td>
+            </tr>
+            <tr>
+                <td id='r4c1'></td>
+                <td id='r4c2'></td>
+                <td id='r4c3'></td>
+                <td id='r4c4'></td>
+                <td id='r4c5'></td>
+            </tr>
+            <tr>
+                <td id='r5c1'></td>
+                <td id='r5c2'></td>
+                <td id='r5c3'></td>
+                <td id='r5c4'></td>
+                <td id='r5c5'></td>
+            </tr>
+            <tr>
+                <td id='r6c1'></td>
+                <td id='r6c2'></td>
+                <td id='r6c3'></td>
+                <td id='r6c4'></td>
+                <td id='r6c5'></td>
+            </tr>
+        </table>
+            <br>
+            <h1 id='feil'></h1>
+        <script>
+            function randint(start, end){
+			    return Math.floor(Math.random()*(end-start+1))+start
+		    }
+			// usage: getWords().then(function(words) { ... });
+            function getWords() {
+				return fetch('wordleWords.json').then((s) => s.json());
+			}
+            var word;
+            var words;
+            getWords().then(function(w) {
+                words = w;
+                word = w[randint(0, w.length-1)];});
+            var row = 1;
+            var col = 1;
+            var currentWord = ""
+            var done = false;
+            document.addEventListener('keydown', function(event) {
+                if (done){
+                    return;
+                }
+    var key = event.key; // "a", "1", "Shift", etc.
+            key = key.toLowerCase();
+            if (key.length == 1) {if (col == 6){return;} currentWord += key; document.getElementById(`r${row}c${col}`).innerHTML = key; col ++;}
+            if (key == "backspace") {currentWord = currentWord.slice(0, currentWord.length - 1);if (col != 1) {col --;}document.getElementById(`r${row}c${col}`).innerHTML = ""; }
+				// tip: You can use a hidden text <input> element to handle all the text editing
+				// the lazy way
+				// like it's focused offscreen
+				// and you read its value
+            // if (col == 6){
+            //     col --;
+            // }
+                if (key == "enter"){
+                    if (words.includes(currentWord)){
+                        var usable = [true, true, true, true, true]
+                        var usable2 = [true, true, true, true, true]
+                        for (var i = 0; i < 5; i++){
+                            if (word[i] == currentWord[i]){
+                                document.getElementById(`r${row}c${i+1}`).style.backgroundColor = "green";
+                                usable[i] = false;
+                            }
+                        }
+                        for (var i = 0; i < 5; i++){
+                            if (!usable[i]){
+                                continue;
+                            }
+                            var count1 = 0;
+                            for (var j = 0; j < 5; j++){
+                                if (!usable[j] || j == i){
+                                    continue
+                                }
+                                if (word[j] == word[i]){
+                                    count1 ++;
+                                }
+                            }
+                            var count2 = 0;
+                            
+                            for (var j = 0; j < 5; j++){
+                                if (!usable[j]){
+                                    continue;
+                                }
+                                if (currentWord[j] == word[i]){
+                                    if (count2 <= count1){
+                                        document.getElementById(`r${row}c${j+1}`).style.backgroundColor = "yellow";
+                                        count2 ++;
+                                        usable2[j] = false;
+                                    }
+                                }
+                            }
+                        }
+                            for (var i = 0; i < 5; i++){
+                                if (usable[i] && usable2[i]){
+                                    document.getElementById(`r${row}c${i+1}`).style.backgroundColor = "red";
+                                }
+                            }
+                        if (word == currentWord){
+                            document.getElementById("feil").innerHTML = `YOU WIN!`;
+                            done = true;
+                            return;
+                        }
+                        col = 1;
+                        row ++;
+                        if (row == 7){
+                            document.getElementById("feil").innerHTML = `Fail! the word was ${word}`;
+                            done = true;
+                            return;
+                        }
+                        currentWord = "";
+                    }
+                    else {
+                        alert("Word not in word bank!")
+                    }
+                }
+});
+        </script>
+    </body>
+</html>

@@ -1,0 +1,26 @@
+<html>
+    <head>
+    	<meta charset="utf-8">
+    	<meta name="viewport" content="width=device-width">
+    	<title>Hangman</title>
+    </head>
+    <body>
+        <pre id="screen" style="font-size: 40px;">Loading...</pre>
+        <script>
+			var attempt = 1;
+			// usage: getWords().then(function(words) { ... });
+            function getWords() {
+				return fetch('wordleWords.json').then((s) => s.json());
+			}
+            var w;
+            getWords().then(function(words) {
+				w = words; 
+				console.log(w);
+				var word = w[Math.floor(Math.random() * w.length)];
+			});
+			function update() {
+				document.querySelector('pre').textContent = "Attempt " + attempt + "/6\n";
+			}
+        </script>
+    </body>
+</html>

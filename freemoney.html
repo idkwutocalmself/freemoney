@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title id='taitl'>Free Money?</title>
+	<link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body class='text'>
+	<script>assist = localStorage.getItem('assist') ? true : false;</script>
+    <h5 style="color: rgb(60, 60, 60);">Stage <span id='stage'></span>, Level <span id='level'></span>, click <button onclick='if (confirm("ARE YOU SURE??")) goto1(1)'>this</button> to reset progress. <a href='index.html'>Return to main page</a> / <label><input type="checkbox" onchange="assist = this.checked; localStorage.setItem('assist', assist ? 'assistOn' : ''); document.querySelector('#mobileLabel').textContent += ' (RELOAD TO APPLY)';" /> <span id="mobileLabel">Mobile assistance (check if you play on mobile)</span></label></h5> 
+	<script>if (assist) document.querySelector('input').checked = 'checked'; else document.querySelector('input').checked = '';</script>
+	<div id='baudy'>
+		You aren't supposed to see this. If you do see this, good for you.
+	</div>
+	<div id="saving" hidden="hidden">Saving...</div>
+	<script src='script.js'></script>
+    <script src='level3.js'></script>
+	<script src='level2.js'></script>
+	<script src='level1.js'></script>
+	<script src="leo_encode.js"></script>
+</body>
+
+</html>

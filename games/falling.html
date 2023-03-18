@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>falling game</title>
+</head>
+<!-- finish chasing -->
+<body style="text-align: center;">
+    <h1>Points: <span id='points'>0</span></h1>
+	<div id='pad' style="display: inline-block;"></div>
+    <h1 style='display: none;' id='lose'>You died</h1>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"
+		integrity="sha512-4P0ZJ49OMXe3jXT+EsEaq82eNwFeyYL81LeHGzGcEhowFbTqeQ80q+NEkgsE8tHPs6aCqvi7U+XWliAjDmT5Lg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        window.addEventListener("keydown", function(e) {
+    if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+        e.preventDefault();
+    }
+}, false);
+        function colliding(circle, rect) {
+            var distX = Math.abs(circle.x - rect.x - rect.w / 2);
+            var distY = Math.abs(circle.y - rect.y - rect.h / 2);
+
+            if (distX > (rect.w / 2 + circle.r)) {return false;}
+            if (distY > (rect.h / 2 + circle.r)) {return false;}
+
+            if (distX <= (rect.w / 2)) {return true;}
+            if (distY <= (rect.h / 2)) {return true;}
+
+            var dx = distX - rect.w / 2;
+            var dy = distY - rect.h / 2;
+            return (dx * dx + dy * dy <= (circle.r * circle.r));
+        }
+        function randint(s, e){
+            return Math.floor(Math.random()*(e-s+1)) + s;
+        }
+        class Lava {
+            constructor(x, y){
+                this.x = x;
+                this.y = y;
+                this.grav = 0;
+            }
+        }
+        var points = 0;
+        var lava = [];
+        var x = 10;
+        var lose = false;
+        var prev = 0;
+        function spawn(){
+            var lava1 = new Lava(randint(0, 580), 0);
+            lava.push(lava1);
+        }
+        function update(){
+            draw.clear()
+            draw.stroke(0);
+            draw.line(1, 1, 1, 599);
+            draw.line(599, 1, 1, 1);
+            draw.line(1, 599, 599, 599);
+            draw.line(599, 1, 599, 599);
+            var circle = {x: x, y: 590, r: 10};
+            var now = Date.now();
+            if (now - prev >= 100){
+                spawn();
+                prev = now;
+            }
+            var c = draw.color(0, 250, 100);
+            draw.noStroke();
+            draw.fill(c);
+            draw.circle(x, 590, 20);
+            var newLava = [];
+            for (var i = 0; i < lava.length; i++){
+                var rect = {x: lava[i].x, y: lava[i].y, w: 30, h: 30}
+                var c = draw.color(255, 0, 0);
+                draw.fill(c);
+                draw.rect(lava[i].x, lava[i].y, 30, 30);
+                lava[i].y += lava[i].grav;
+                lava[i].grav += 0.5;
+                if (lava[i].y <= 600){
+                    newLava.push(lava[i]);
+                }
+                else {
+                    points ++;
+                    document.getElementById("points").innerHTML = points;
+                }
+                if (colliding(circle, rect)){
+                    lose = true;
+                    clearInterval(globalThis.updateInterval);
+                    document.getElementById('lose').style.display = 'block';
+                }
+            }
+            lava = newLava;
+            if (draw.keyIsDown(draw.RIGHT_ARROW)) {
+                x += 6
+                if (x > 790){
+                    x = 790;
+                }
+            }
+            if (draw.keyIsDown(draw.LEFT_ARROW)) {
+                x -= 6
+                if (x < 10){
+                    x = 10;
+                }
+            }
+        }
+        var s = function(sketch) {
+			sketch.setup = function() {
+				sketch.createCanvas(600, 600);
+				globalThis.updateInterval = setInterval(update, 1000 / 24);
+			};
+		};
+		var draw = new p5(s, 'pad');
+    </script>
+</body></html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>2048 ripoff</title>
+</head>
+
+<body style="text-align: center; box-sizing: border-box;">
+	<p>Just your average 2048 game.</p>
+	<div id="pad"></div>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js" integrity="sha512-4P0ZJ49OMXe3jXT+EsEaq82eNwFeyYL81LeHGzGcEhowFbTqeQ80q+NEkgsE8tHPs6aCqvi7U+XWliAjDmT5Lg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<style>
+		@keyframes fade {
+			0% {
+				background-color: white;
+			}
+			10% {
+				background-color: pink;
+			}
+			20% {
+				background-color: purple;
+			}
+			30% {
+				background-color: yellow;
+			}
+			40% {
+				background-color: red;
+			}
+			50% {
+				background-color: green;
+			}
+			60% {
+				background-color: cyan;
+			}
+			70% {
+				/* skyblue is a bit lighter (I think?) */
+				background-color: skyblue;
+			}
+			80% {
+				background-color: lightblue;
+			}
+			90% {
+				background-color: gray;
+			}
+			100% {
+				background-color: black;
+			}
+		}
+		.done {
+			animation: fade 10s;
+			animation-fill-mode: forwards;
+			animation-timing-function: linear;
+		}
+	</style>
+	<script>var width = 400, height = 400; var s = function(sketch) {
+  sketch.setup = function() {
+    sketch.createCanvas(width, height);
+  };
+};  
+var draw = new p5(s, 'pad');
+		class block {
+			constructor(x, y, num, exists = true) {
+				this.num = num;
+				this.x = x;
+				this.y = y;
+				this.exists = exists;
+			}
+			replaceBlock(withwat) {
+				var index1 = this.y,
+					index2 = this.x;
+				spaces[index1][index2] = withwat;
+			}
+		}
+		var spaces = [];
+		for (var i = 0; i < 4; i++) { var array = []; for (var j = 0; j < 4; j++) array.push(new block(j, i, null, false)); spaces.push(array);}
+		function unusedSpaces() {
+			var unused = [];
+			spaces.forEach(function(row) {
+				row.forEach(function(col) {
+					if (col.num == null && !col.exists) unused.push(col);
+				});
+			});
+			return unused;
+		}
+		function addNewBlock() {
+			var num = (Math.random() < 0.75) ? 2 : 4;
+			var space = unusedSpaces()[Math.floor(Math.random() * unusedSpaces().length)];
+			space.replaceBlock(new block(space.x, space.y, num, true));
+		}
+		var colors = {2: 'lightyellow', 4: 'yellow'};
+		addNewBlock();
+		addNewBlock();
+		function update() {
+			draw.fill('brown');
+			draw.rect(0, 0, width, height);
+			spaces.forEach(function(row) {
+				row.forEach(function(space) {
+					if (!space.num) return;
+					draw.fill(colors[space.num] ?? 'white');
+					draw.rect(space.x * width / 4, space.y * width / 4, width / 4, width / 4);
+					draw.textAlign('center', 'center');
+					var num = space.num;
+					if (num < 64) draw.fill('black');
+					else draw.fill('white');
+					draw.textSize(20);
+					draw.text(space.num, space.x * width / 4, space.y * width / 4, width / 4, width / 4);
+				})
+			});
+		}
+		function shiftBlocks(direction) {
+			var original = structuredClone(original);
+			switch (direction) {
+				case 'left':
+					spaces.forEach(function(row, y) {
+						row.forEach(function(col, x) {
+							if (!col.exists) return;
+							i = x;
+							j = y;
+							while (i) {
+								i--;
+								if (spaces[y][i].num == spaces[y][x].num) {
+									spaces[y][x] = new block(x, y, null, false);
+									spaces[y][i].num *= 2;
+								}
+							}
+						})
+					});
+					break;
+			}
+		}
+		setInterval(update, 1000 / 30);
+	</script>
+	<div id="answer" hidden="hidden">
+		<form onsubmit="if (document.querySelector('#answerInput').value != answer) lose(); else win(); console.log(answer, document.querySelector('#answerInput').value);">
+			<label>Answer: <input id="answerInput" /></label>
+			<input type="submit" value="Done!" />
+		</form>
+	</div>
+</body></html>

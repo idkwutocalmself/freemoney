@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Viruses</title>
+</head>
+
+<body style="text-align: center; box-sizing: border-box;">
+	<p>Count the number of viruses that fall down for, well, a reward.</p>
+	<div id="pad"></div>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js" integrity="sha512-4P0ZJ49OMXe3jXT+EsEaq82eNwFeyYL81LeHGzGcEhowFbTqeQ80q+NEkgsE8tHPs6aCqvi7U+XWliAjDmT5Lg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<style>
+		@keyframes fade {
+			0% {
+				background-color: white;
+			}
+			10% {
+				background-color: pink;
+			}
+			20% {
+				background-color: purple;
+			}
+			30% {
+				background-color: yellow;
+			}
+			40% {
+				background-color: red;
+			}
+			50% {
+				background-color: green;
+			}
+			60% {
+				background-color: cyan;
+			}
+			70% {
+				/* skyblue is a bit lighter (I think?) */
+				background-color: skyblue;
+			}
+			80% {
+				background-color: lightblue;
+			}
+			90% {
+				background-color: gray;
+			}
+			100% {
+				background-color: black;
+			}
+		}
+		.done {
+			animation: fade 10s;
+			animation-fill-mode: forwards;
+			animation-timing-function: linear;
+		}
+	</style>
+	<script>var width = 640, height = 480; var s = function(sketch) {
+  sketch.setup = function() {
+    sketch.createCanvas(width, height);
+  };
+};  
+		var viruses = [];
+		var done = false;
+		const g = 0.1;
+var draw = new p5(s, 'pad');
+	var answer = Math.floor(Math.random() * 20) + 10;
+	for (var i = 0; i < answer; i++) {
+		(function(index) { setTimeout(function() {
+			viruses.push({'text': 'VIRUS', 'x': Math.random() * 600, 'y': Math.random() * -100, 'speed': 0, 'color': ['cyan', 'lime', 'white', 'pink', 'yellow'][Math.floor(Math.random() * 5)]});
+			if (index == answer - 1) {
+				setTimeout(() => { document.body.classList.add('done'); document.querySelector('#answer').hidden = ''; done = true; }, 5000);
+			}
+		}, i * (250 + Math.random() * 100)); })(i);
+	}
+		function update() {
+			draw.clear();
+			if (done) {
+				draw.fill(getComputedStyle(document.body).backgroundColor);
+				draw.rect(0, 0, width, height);
+				draw.fill('white');
+				draw.textSize(30);
+				draw.textWrap(draw.CHAR);
+				draw.text('Enter the number of viruses correctly below or you will get the kurz virus.', 0, 0, width, height);
+				return;
+			}
+			viruses.forEach((v) => {
+				v.speed += g;
+				v.y += v.speed;
+				draw.strokeWeight(1);
+				draw.textSize(20);
+				draw.stroke('black');
+				draw.fill(v.color);
+				draw.rect(v.x - 5, v.y - 5, draw.textWidth(v.text) + 10, 30);
+				draw.textAlign(draw.LEFT, draw.TOP);
+				draw.fill('black');
+				draw.text(v.text, v.x, v.y);
+			});
+            // timmy can u help me for a sec
+            // i need to read the contents of wordle.json
+            // in wordle.html
+		}
+        function lose(){
+            document.write("you failed")
+        }
+		function win() {
+			document.write('your prize: <img style = "width: 100%" src="../hecker.png" alt="hecker has hacked your pc" />');
+		}
+	setInterval(update, 10);
+	</script>
+	<div id="answer" hidden="hidden">
+		<form onsubmit="if (document.querySelector('#answerInput').value != answer) lose(); else win(); console.log(answer, document.querySelector('#answerInput').value);">
+<!--        theres no win() -->
+<!--             document.querySelector('#answer').value is undefined -->
+			<!-- weird -->
+			<!-- This is embarrassing to say the least, but it took us upwards of 5 minutes to realize the <div> above also has an id of "answer" -->
+			<label>Answer: <input id="answerInput" /></label>
+			<input type="submit" value="Done!" />
+		</form>
+	</div>
+</body></html>

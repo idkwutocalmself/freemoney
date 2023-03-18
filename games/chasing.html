@@ -1,0 +1,348 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>chasing game</title>
+</head>
+
+<body>
+	kill the enemy, w = change weapon, p = pro shield (1 second) <button
+		onclick="phaseRequirements = 0.5; doDamageToEnemy(enemyOriginalHealth / 2); this.disabled = 'disabled';">Too
+		hard</button>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"
+		integrity="sha512-4P0ZJ49OMXe3jXT+EsEaq82eNwFeyYL81LeHGzGcEhowFbTqeQ80q+NEkgsE8tHPs6aCqvi7U+XWliAjDmT5Lg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script>
+		var angleBetweenPoints = (p1, p2) => Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+		var enemyWidth = 75, enemyHeight = 75, enemyAngle = 90;
+		var phaseRequirements = 1;
+		var damagePerHit = 26;
+		var enemyAttackStarted = false;
+		var enemyPhase = 'laser';
+		var phases = ['laser'];
+		var weaponCooldown = 20;
+		var playerX = 200, playerY = 200, playerSize = 25, playerHealth = 100, playerOriginalHealth = 100, playerDeflectFrames = 73;
+		const intersects = (start1, end1, start2, end2) => ((start1 <= end2) && (end1 >= start2));
+		var enemySightRange = 200;
+		var enemyFiringFrames = 0;
+		var enemyNoticedYou = false;
+		var enemySight = 30;
+		var enemyX = 295, enemyY = 215;
+		var enemyHealth = 8000;
+		var enemyCounter = 0;
+		var missiles = [];
+		var enemyOriginalHealth = enemyHealth;
+		var enemyLastHitHealth = enemyHealth;
+		var framesLeftUntilAttack = 0, framesSinceLastDamage = 0;
+		document.addEventListener('keydown', (ev) => {
+			if (ev.key.toLowerCase() == 'p') {
+				var deflectFrames = playerDeflectFrames;
+				if (deflectFrames >= 24 && deflectFrames <= 48) {
+					console.log('not allowed!');
+				} else playerDeflectFrames = 0;
+			}
+			if (ev.key !== 'Enter') return;
+			if (framesLeftUntilAttack) return;
+			if (!(Math.sqrt((enemyX + enemyWidth / 2 - (playerX + playerSize / 2)) ** 2 + (enemyY + enemyHeight / 2 - (playerY + playerSize / 2)) ** 2) <= 75)) return;
+			framesLeftUntilAttack = weaponCooldown;
+			doDamageToEnemy(damagePerHit);
+		});
+		function doDamageToEnemy(damage) {
+			enemyDamageThisFrame = true;
+			enemyHealth -= damage;
+			if (enemyHealth <= enemyOriginalHealth * 2 * phaseRequirements / 3) {
+				if (phases.indexOf('phase2') == -1) {
+					enemyCounter = 0;
+					enemyPhase = 'phase2';
+					phases.push('phase2');
+				}
+			}
+			if (enemyHealth <= enemyOriginalHealth * phaseRequirements / 2) {
+				if (phases.indexOf('phase3') === -1) {
+					enemyCounter = 0;
+					enemyPhase = 'phase3';
+					phases.push('phase3');
+				}
+			}
+			framesSinceLastDamage = 0;
+		}
+		var enemyDamageThisFrame;
+		function update() {
+			draw.clear();
+			if (quickSwitchWeapon) {
+				draw.fill('black');
+				draw.rect(0, 0, 640, 480);
+				draw.fill('white');
+				draw.textSize(20);
+				draw.text('You can quickly switch your weapon here.\nDo not tell anyone about this, okay?\n\nControls:\n← Previous\nNext →\nSelect: release w', 0, 0, 640, 480);
+				draw.fill('lime');
+				draw.text(`Current weapon: ${weapons[currentWeapon].name}\n${weapons[currentWeapon].description}\n\nDamage: ${weapons[currentWeapon].damage}\nTime between hits: ${weapons[currentWeapon].speed / 24} seconds`, 0, 180, 640, 480);
+				return;
+			};
+			playerHealth += 1 / 30;
+			if (playerHealth >= playerOriginalHealth) playerHealth = playerOriginalHealth;
+			enemyDamageThisFrame = false;
+			playerDeflectFrames++;
+			enemyCounter++;
+			if (enemyPhase == 'phase3' && enemyFiringFrames > 120) {
+				moveEnemy(320 - 20, 240 - 20);
+				draw.push();
+				draw.fill(draw.color(0, 255, 255, 255 * enemyCounter / 480));
+				draw.circle(enemyX + enemyWidth / 2, enemyY + enemyHeight / 2, 2 * (20 + (480 - enemyCounter) / 3));
+				draw.pop();
+			}
+			if (enemyPhase == 'phase3' && enemyCounter == 480) enemyFiringFrames = 0;
+			if (enemyPhase == 'phase3' && enemyCounter > 480) {
+				if (enemyFiringFrames == 120) enemyCounter = 0;
+				if (!(enemyFiringFrames % 40)) {
+					for (var i = 0; i < 360; i += 36) {
+						missiles.push({
+							'enemy': true, 'x': enemyX + enemyWidth / 2 - 5, 'y': enemyY + enemyHeight / 2 - 5, 'width': 10, 'height': 10, 'angle': i, 'speed': 10, 'color': 'blue', 'damage': 20, 'onUpdate': function (missile) {
+								if (!missile.counter) missile.counter = 0;
+								missile.counter++;
+								if (missile.counter == 20) {
+									missile.speed *= 2;
+									missile.angle = angleBetweenPoints({x: missile.x + missile.width / 2, y: missile.y + missile.height / 2}, {x: playerX + playerSize / 2, y: playerY + playerSize / 2}) - 90;
+								}
+							}
+						});
+					}
+				}
+			}
+			if (enemyPhase == 'phase2' && enemyFiringFrames > 240) {
+				moveEnemy(320 - 20, 240 - 20);
+				draw.push();
+				draw.fill(draw.color(0, 255, 255, 255 * enemyCounter / 480));
+				draw.circle(enemyX + enemyWidth / 2, enemyY + enemyHeight / 2, 2 * (20 + (480 - enemyCounter) / 3));
+				draw.pop();
+			}
+			if (enemyFiringFrames <= 240 && enemyPhase == 'phase2') {
+				if (!(enemyFiringFrames % 30)) {
+					missiles.push({'enemy': true, 'x': enemyX + enemyWidth / 2 - 5, 'y': enemyY + enemyHeight / 2 - 25, 'width': 10, 'height': 50, 'color': 'lightblue', 'speed': 20, 'damage': 20, 'angle': angleBetweenPoints({'x': playerX + playerSize / 2, 'y': (playerY + playerSize / 2)}, {'x': enemyX + enemyWidth / 2, 'y': (enemyY + enemyHeight / 2)}) - 180 - 90});
+				}
+				var direction = enemyAngle;
+				moveEnemy(...movePointAtAngle([enemyX, enemyY], direction, 25));
+			}
+			if (enemyPhase == 'phase2' && enemyCounter >= 480) {
+				for (var i = 0; i < 360; i += 36) {
+					missiles.push({'enemy': true, 'x': enemyX + enemyWidth / 2 - 5, 'y': enemyY + enemyHeight / 2 - 5, 'width': 10, 'height': 10, 'angle': i, 'speed': 20, 'color': 'blue', 'damage': 20});
+				}
+				enemyFiringFrames = 0;
+				enemyCounter = 0;
+			}
+			if (enemyPhase == 'laser' && enemyFiringFrames > 60) {
+				moveEnemy(playerX - 20, playerY - 200);
+				draw.push();
+				draw.fill('purple');
+				draw.circle(playerX + playerSize / 2, playerY + playerSize / 2, 2 * ((240 - enemyCounter) / 4 + 20));
+				draw.fill('pink');
+				draw.circle(playerX + playerSize / 2, playerY + playerSize / 2, 40);
+				draw.strokeWeight(3);
+				draw.stroke('purple');
+				draw.line(enemyX + enemyWidth / 2, enemyY + enemyHeight / 2, playerX + playerSize / 2, playerY + playerSize / 2);
+				draw.pop();
+				if (enemyY <= 0) enemyY = 0;
+			}
+			if (enemyCounter >= 240 && enemyPhase == 'laser' && !enemyAttackStarted) {
+				enemyFiringFrames = 0;
+				enemyAttackStarted = true;
+			}
+			if (enemyCounter >= 240 && enemyPhase == 'laser' && !(enemyFiringFrames % 20) && enemyAttackStarted) {
+				missiles.push({'enemy': true, 'x': enemyX + enemyWidth / 2 - 5, 'y': enemyY + enemyHeight / 2 - 25, 'width': 10, 'height': 50, 'color': 'lightblue', 'speed': 20, 'damage': 20, 'angle': angleBetweenPoints({'x': playerX + playerSize / 2, 'y': (playerY + playerSize / 2)}, {'x': enemyX + enemyWidth / 2, 'y': (enemyY + enemyHeight / 2)}) - 180 - 90});
+				if (enemyFiringFrames >= 60) {
+					enemyCounter = 0;
+					enemyAttackStarted = false;
+				}
+			}
+			enemyFiringFrames++;
+			var rect = draw.canvas.getBoundingClientRect();
+			playerX = mouseX - rect.x;
+			playerY = mouseY - rect.y;
+			if (playerX >= 620) playerX = 620;
+			if (playerY >= 460) playerY = 460;
+			if (playerX <= 0) playerX = 0;
+			if (playerY <= 0) playerY = 0;
+			framesSinceLastDamage++;
+			var regenerateThisFrame = false;
+			if (enemyHealth < enemyOriginalHealth * 0.9 && framesSinceLastDamage >= 480) {
+				enemyHealth += 2;
+				regenerateThisFrame = true;
+			}
+			framesLeftUntilAttack -= 1;
+			if (framesLeftUntilAttack <= 0) framesLeftUntilAttack = 0;
+			draw.fill('black');
+			draw.textSize(12);
+			draw.textAlign(draw.LEFT);
+			draw.text(`${Math.round(100 * playerHealth / playerOriginalHealth)}%`, playerX, playerY - 12);
+			draw.fill('blue');
+			draw.rect(playerX, playerY, playerSize, playerSize);
+			draw.push();
+			draw.fill('green');
+			draw.angleMode(draw.DEGREES);
+			if (playerDeflectFrames <= 24) {
+				draw.fill(draw.color(0, 255, 255, 0.8 * 255));
+				draw.rect(playerX - 10, playerY - 10, playerSize + 20, playerSize + 20);
+			}
+			if (playerDeflectFrames >= 24 && playerDeflectFrames <= 48) {
+				draw.fill(draw.color(0, 0, 0, 0));
+				draw.strokeWeight(10);
+				progress = (playerDeflectFrames - 24);
+				draw.stroke(draw.color((24 - progress) * 255 / 24, progress * 255 / 24, 0));
+				draw.strokeCap(draw.SQUARE);
+				draw.arc(playerX - 50, playerY, 30, 30, 0, (playerDeflectFrames - 24) / 24 * 360);
+			}
+			draw.pop();
+			draw.angleMode(draw.DEGREES);
+			enemyAngle = angleBetweenPoints({'x': playerX + playerSize / 2, 'y': (playerY + playerSize / 2)}, {'x': enemyX + enemyWidth / 2, 'y': (enemyY + enemyHeight / 2)}) - 180;
+			draw.fill(draw.color(0, 0, 0, 0.5 * 255));
+			// draw.arc(enemyX + enemyWidth / 2, enemyY + enemyHeight / 2, enemySightRange, enemySightRange, enemyAngle - enemySight, enemyAngle + enemySight);
+			draw.fill('red');
+			draw.rect(enemyX, enemyY, enemyWidth, enemyHeight);
+			if (Math.sqrt((enemyX + enemyWidth / 2 - (playerX + playerSize / 2)) ** 2 + (enemyY + enemyHeight / 2 - (playerY + playerSize / 2)) ** 2) <= 75) {
+				draw.fill(draw.color(0, 0, 0, 0.2 * 255));
+				var max = weapons[currentWeapon].speed;
+				if (framesLeftUntilAttack <= 0) {
+					draw.circle(playerX + playerSize / 2, playerY + playerSize / 2, 150)
+					draw.fill('black');
+					draw.text('ENTER = attack', playerX + 30, playerY);
+				} else draw.arc(playerX + playerSize / 2, playerY + playerSize / 2, 150, 150, 0, 360 * (max - framesLeftUntilAttack) / max);
+			}
+			missiles = missiles.filter(function (missile) {
+				if (missile.onUpdate) missile.onUpdate(missile);
+				draw.fill(missile.color ?? 'blue');
+				draw.push();
+				draw.angleMode(draw.DEGREES);
+				draw.translate(missile.x + missile.width / 2, missile.y + missile.height / 2);
+				draw.rotate(missile.angle ?? 0);
+				draw.rect(-missile.width / 2, -missile.height / 2, missile.width, missile.height);
+				draw.pop();
+				var newPoint = movePointAtAngle([0, 0], missile.angle ?? 0, missile.speed ?? 0);
+				missile.x += newPoint[0];
+				missile.y += newPoint[1];
+				if (intersects(missile.x, missile.x + missile.width, playerX, playerX + playerSize) && intersects(missile.y, missile.y + missile.height, playerY, playerY + playerSize) && missile.enemy) {
+					if (playerDeflectFrames <= 24 && !missile.neverDeflectAgain) {
+						missile.neverDeflectAgain = true;
+						missile.speed = (missile.speed ?? 0) * -1;
+						missile.enemy = false;
+					} else {
+						if (!missile.neverDeflectAgain) playerHealth -= missile.damage;
+						if (playerHealth <= 0) {
+							draw.fill('black');
+							draw.textSize(40);
+							draw.textAlign(draw.CENTER);
+							draw.text('YOU LOST!', 0, 50, 640);
+							clearInterval(updateInterval);
+						}
+						return false;
+					}
+				}
+				if (!missile.enemy && intersects(missile.x, missile.x + missile.width, enemyX, enemyX + enemyWidth) && intersects(missile.y, missile.y + missile.height, enemyY, enemyY + enemyHeight) && !missile.noDamage) {
+					doDamageToEnemy(missile.damage * 5);
+					missile.noDamage = true;
+				}
+				return true;
+			})
+			var subtract = Math.round(Math.abs(enemyLastHitHealth - enemyHealth) ** 0.6);
+			if (subtract != subtract) subtract = 0;
+			if (!enemyDamageThisFrame && framesSinceLastDamage > 13) enemyLastHitHealth -= subtract;
+			if (enemyLastHitHealth <= enemyHealth) enemyLastHitHealth = enemyHealth;
+			draw.textAlign(draw.CENTER);
+			draw.fill('black');
+			draw.textSize(20);
+			draw.text('Enemy: ' + Math.round(100 * enemyHealth / enemyOriginalHealth) + '%', 0, 20, 640);
+			draw.fill('black');
+			draw.rect(50, 40, 540, 10);
+			draw.fill('lightgray');
+			draw.rect(50, 40, 540 * enemyLastHitHealth / enemyOriginalHealth, 10);
+			if (!regenerateThisFrame) draw.fill(draw.color((enemyOriginalHealth - enemyHealth) / enemyOriginalHealth * 255, enemyHealth / enemyOriginalHealth * 255, 0));
+			else draw.fill(draw.color(0, 200, 0));
+			draw.rect(50, 40, 540 * enemyHealth / enemyOriginalHealth, 10);
+			if (enemyHealth <= 0) enemyHealth = 0;
+			if (enemyLastHitHealth <= 0) {
+				enemyLastHitHealth = 0;
+				draw.fill('black');
+				draw.textSize(40);
+				draw.textAlign(draw.CENTER);
+				draw.text('You WON!', 0, 50, 640);
+				clearInterval(updateInterval);
+			}
+		}
+		var s = function (sketch) {
+			sketch.setup = function () {
+				sketch.createCanvas(640, 480);
+				updateInterval = setInterval(update, 1000 / 24);
+			};
+		};
+		onmousemove = (ev) => {mouseX = ev.clientX; mouseY = ev.clientY;};
+		var quickSwitchWeapon = false;
+		onkeydown = (ev) => {
+			if (ev.key.toLowerCase() == 'w') quickSwitchWeapon = true;
+			if (quickSwitchWeapon) {
+				if (ev.key == 'ArrowLeft') {
+					currentWeapon--;
+					if (currentWeapon < 0) currentWeapon = weapons.length - 1;
+				}
+				if (ev.key == 'ArrowRight') {
+					currentWeapon++;
+					if (currentWeapon >= weapons.length) currentWeapon = 0;
+				}
+				damagePerHit = weapons[currentWeapon].damage;
+				weaponCooldown = weapons[currentWeapon].speed;
+			}
+		}
+		onkeyup = (ev) => {if (ev.key.toLowerCase() == 'w') quickSwitchWeapon = false;}
+		var draw = new p5(s, 'pad');
+		var weapons = [
+			{
+				"name": 'Default',
+				'description': 'Your default weapon',
+				'damage': 52,
+				'speed': 18
+			},
+			{
+				"name": "Axe",
+				'description': "Hits slow but hard.",
+				'speed': 36,
+				'damage': 78
+			},
+			{
+				"name": "Spear",
+				'description': "Does little damage but can be SPAMMED.",
+				'speed': 8,
+				'damage': 20
+			}
+		];
+		var mouseX = 0, mouseY = 0;
+		function moveEnemy(x, y) {
+			if (x <= 0) x = 0;
+			if (y <= 0) y = 0;
+			if ((x + enemyWidth) >= 640) x = 640 - enemyWidth;
+			if ((y + enemyHeight) >= 480) y = 480 - enemyHeight;
+			var maxSpeed = 20;
+			var car = {'preferredX': x, 'preferredY': y, 'x': enemyX, 'y': enemyY};
+			const distance = Math.sqrt((car.preferredX - car.x) ** 2 + (car.preferredY - car.y) ** 2);
+			if (car.charging) maxSpeed = 0;
+			if (distance <= maxSpeed) {
+				car.x = car.preferredX;
+				car.y = car.preferredY;
+				return;
+			}
+			car.x += (car.preferredX - car.x) * maxSpeed / distance;
+			car.y += (car.preferredY - car.y) * maxSpeed / distance;
+			enemyX = car.x;
+			enemyY = car.y;
+		}
+		var currentWeapon = 0;
+		function movePointAtAngle(point, angle, distance) {
+			angle += 180;
+			angle /= (180 / Math.PI);
+			return [
+				point[0] + (Math.sin(angle) * distance),
+				point[1] - (Math.cos(angle) * distance)
+			];
+		}
+	</script>
+</body>
+
+</html>

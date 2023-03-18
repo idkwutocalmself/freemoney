@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Lava game</title>
+</head>
+<!-- finish chasing -->
+<body style="text-align: center;">
+    <h1>Points: <span id='points'>0</span></h1>
+	<div id='pad' style="display: inline-block;"></div>
+    <h1 style='display: none;' id='lose'>You died</h1>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"
+		integrity="sha512-4P0ZJ49OMXe3jXT+EsEaq82eNwFeyYL81LeHGzGcEhowFbTqeQ80q+NEkgsE8tHPs6aCqvi7U+XWliAjDmT5Lg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        window.addEventListener("keydown", function(e) {
+    if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+        e.preventDefault();
+    }
+}, false);
+        function movePointAtAngle(point, angle, distance) {
+			angle += 180;
+			angle /= (180 / Math.PI);
+			return [
+				point[0] + (Math.sin(angle) * distance),
+				point[1] - (Math.cos(angle) * distance)
+			];
+		}
+        function colliding(circle, rect) {
+            var distX = Math.abs(circle.x - rect.x - rect.w / 2);
+            var distY = Math.abs(circle.y - rect.y - rect.h / 2);
+
+            if (distX > (rect.w / 2 + circle.r)) {return false;}
+            if (distY > (rect.h / 2 + circle.r)) {return false;}
+
+            if (distX <= (rect.w / 2)) {return true;}
+            if (distY <= (rect.h / 2)) {return true;}
+
+            var dx = distX - rect.w / 2;
+            var dy = distY - rect.h / 2;
+            return (dx * dx + dy * dy <= (circle.r * circle.r));
+        }
+        function randint(s, e){
+            return Math.floor(Math.random()*(e-s+1)) + s;
+        }
+        function dist(s, e){
+            return Math.sqrt((s[0] - e[0])*(s[0] - e[0]) + (s[1] - e[1])*(s[1] - e[1]))
+        }
+        class Lava {
+            constructor(x, y, width, height, rspeed, uspeed, shoot, bullet = false){
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.rspeed = rspeed;
+                this.uspeed = uspeed;
+                this.shoot =  shoot;
+                this.bullet = bullet;
+            }
+        }
+        var frame = 0;
+        var points = 0;
+        var lava = [];
+        var lava1 = new Lava(375, 375, 50, 50, 0, 3, [8, 0.8, 20, 20, 0])
+        lava.push(lava1);
+        lava1 = new Lava(375, 375, 50, 50, -3, 0, [15, 3, 10, 10, 0])
+        lava.push(lava1);
+        lava1 = new Lava(375, 375, 50, 50, 0, -3, [12, 1.5, 40, 40, 0])
+        lava.push(lava1);
+        lava1 = new Lava(375, 375, 50, 50, 3, 0, [10, 1, 30, 30, 0])
+        lava.push(lava1);
+        lava1 = new Lava(375, 375, 50, 50, 0, 0, [8, 0.35, 10, 10, 0])
+        lava.push(lava1);
+        var x = 10;
+        var y = 10;
+        var chaserX = 780;
+        var chaserY = 780;
+        var lose = false;
+        function update(){
+            draw.clear()
+            draw.stroke(0);
+            draw.line(1, 1, 1, 799);
+            draw.line(799, 1, 1, 1);
+            draw.line(1, 799, 799, 799);
+            draw.line(799, 1, 799, 799);
+            var c = draw.color(0, 250, 100);
+            draw.noStroke();
+            draw.fill(c);
+            draw.circle(x, y, 20);
+            var circle = {x: x, y: y, r: 10};
+            var newLava = [];
+            for (var i = 0; i < lava.length; i++){
+                var rect = {x: lava[i].x, y: lava[i].y, w: lava[i].width, h: lava[i].height}
+                if (colliding(circle, rect)){
+                    lose = true;
+                    clearInterval(globalThis.updateInterval);
+                    document.getElementById('lose').style.display = 'block';
+                }
+                if (!lava[i].bullet) c = draw.color(255, 0, 0);
+                else c = draw.color(0, 0, 255);
+                draw.fill(c);
+                lava[i].x += lava[i].rspeed;
+                lava[i].y += lava[i].uspeed;
+                var add = true;
+                if (!lava[i].bullet){
+                    if (Date.now() - lava[i].shoot[4] > lava[i].shoot[1] * 1000){
+                        var distance = [x - lava[i].x - 25, y - lava[i].y - 25];
+                        var ratio = lava[i].shoot[0]/(Math.abs(distance[0]) + Math.abs(distance[1]));
+                        distance[0] *= ratio;
+                        distance[1] *= ratio;
+                        var next = distance;
+                        var newLava1 = new Lava(lava[i].x+25, lava[i].y+25, lava[i].shoot[2], lava[i].shoot[3], next[0], next[1], [], true);
+                        lava[i].shoot[4] = Date.now();
+                        newLava.push(newLava1)
+                    }
+                }
+                if (lava[i].x > 800 - lava[i].width){
+                    if (lava[i].bullet){
+                        add = false;
+                    }
+                    lava[i].x = 800 - lava[i].width;
+                    lava[i].rspeed *= -1;
+                }
+                if (lava[i].x < 0){
+                    if (lava[i].bullet){
+                        add = false;
+                    }
+                    lava[i].x = 0;
+                    lava[i].rspeed *= -1;
+                }
+                if (lava[i].y > 800 - lava[i].height){
+                    if (lava[i].bullet){
+                        add = false;
+                    }
+                    lava[i].y = 800 - lava[i].height;
+                    lava[i].uspeed *= -1;
+                }
+                if (lava[i].y < 0){
+                    if (lava[i].bullet){
+                        add = false;
+                    }
+                    lava[i].y = 0;
+                    lava[i].uspeed *= -1;
+                }
+                if (add) newLava.push(lava[i]);
+                if (colliding(circle, rect)){
+                    lose = true;
+                    clearInterval(globalThis.updateInterval);
+                    document.getElementById('lose').style.display = 'block';
+                }
+                draw.rect(lava[i].x, lava[i].y, lava[i].width, lava[i].height);
+            }
+            lava = newLava;
+            if (draw.keyIsDown(draw.RIGHT_ARROW)) {
+                x += 2
+                if (x > 790){
+                    x = 790;
+                }
+            }
+            if (draw.keyIsDown(draw.LEFT_ARROW)) {
+                x -= 2
+                if (x < 10){
+                    x = 10;
+                }
+            }
+            if (draw.keyIsDown(draw.UP_ARROW)) {
+                y -= 2
+                if (y < 10){
+                    y = 10;
+                }
+            }
+            if (draw.keyIsDown(draw.DOWN_ARROW)) {
+                y += 2
+                if (y > 790){
+                    y = 790;
+                }
+            }
+            // c = draw.color(255, 0, 0);
+            // draw.fill(c);
+            // draw.rect(chaserX, chaserY, 20, 20);
+            // if (chaserX > x){
+            //     chaserX -= 1;
+            // }
+            // if (chaserX < x){
+            //     chaserX += 1;
+            // }
+            // if (chaserY < y){
+            //     chaserY += 1;
+            // }
+            // if (chaserY > y){
+            //     chaserY -= 1;
+            // }
+            // var rect = {x: chaserX, y: chaserY, w: 20, h: 20};
+            // if (colliding(circle, rect)){
+            //     lose = true;
+            //     clearInterval(globalThis.updateInterval);
+            //     document.getElementById('lose').style.display = 'block';
+            // }
+            if (frame == 3){
+                points ++;
+                document.getElementById("points").innerHTML = points;
+                frame = 0;
+            }
+            frame ++;
+        }
+        var s = function(sketch) {
+			sketch.setup = function() {
+				sketch.createCanvas(800, 800);
+				globalThis.updateInterval = setInterval(update, 1000 / 24);
+			};
+		};
+		var draw = new p5(s, 'pad');
+    </script>
+</body></html>
